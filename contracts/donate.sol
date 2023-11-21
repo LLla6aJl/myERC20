@@ -76,7 +76,7 @@ contract Foundation is Ownable, IFoundation {
         emit DonationWithdrawal(donationReceiver,amount);
     }
 
-       function donate() external payable  {
+       function donate() public payable  {
         if (msg.value <1) {
              revert MinimumDonate({
                 amount: msg.value,
@@ -106,6 +106,6 @@ contract Foundation is Ownable, IFoundation {
 
     receive() external payable {
         emit Received(msg.sender, msg.value);
-        this.donate();
+        donate();
     }
 }

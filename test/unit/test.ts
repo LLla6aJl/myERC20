@@ -7,7 +7,7 @@ const donationReceiver = '0x1234567890123456789012345678901234567890';
 const description = 'Test Foundation';
 const amount = ethers.utils.parseEther('1.0');
 const amount2 = ethers.utils.parseEther('2.0');
-const amount10 = ethers.utils.parseEther('5.0');
+const amount3 = ethers.utils.parseEther('3.0');
 const newDescription = "hello world";
 
 
@@ -24,7 +24,7 @@ describe('FundManager', function () {
     Foundation = await ethers.getContractFactory("Foundation");
     await fundManager.deployed();
         // Создание Foundation
-        const foundationItem = await fundManager.createFoundation(ethers.utils.getAddress(donationReceiver), description, { value: 1 });
+        const foundationItem = await fundManager.createFoundation(ethers.utils.getAddress(donationReceiver), description, { value: amount });
         const events = await fundManager.queryFilter(fundManager.filters.Created(), foundationItem.blockNumber);
         expect(events.length).to.equal(1);
         const newContractAddress = events[0].args.contractAddress;
@@ -43,7 +43,7 @@ describe('FundManager', function () {
   it('should transfer funds to Foundation', async () => {
     const {newContractAddress} = await loadFixture(deployContractFixture)
     // Передача средств из  Foundation
-    await fundManager.transferFundsToReceiver(newContractAddress, 1);
+    await fundManager.transferFundsToReceiver(newContractAddress, amount);
     // Получение экземпляра созданной Foundation
     const createdFoundation = Foundation.attach(newContractAddress);
     // Проверка, что средства были переданы
@@ -144,13 +144,13 @@ it("should return the sum of donations", async () => {
   const [donator1, donator2] = await ethers.getSigners();
   const createdFoundation = Foundation.attach(newContractAddress);
 
-  await createdFoundation.connect(donator1).donate({ value: 5 });
-  await createdFoundation.connect(donator2).donate({ value: 8 });
+  await createdFoundation.connect(donator1).donate({ value: amount });
+  await createdFoundation.connect(donator2).donate({ value: amount });
 
   const sumOfDonations = await createdFoundation.getSumOfDonations();
 
   // Проверяем, что возвращенная сумма равна сумме взносов
-  expect(sumOfDonations).to.equal(5 + 8 + 1);
+  expect(sumOfDonations).to.equal(amount3);
 });
 
 it("should receive a donation and call donate()", async () => {
@@ -163,14 +163,14 @@ it("should receive a donation and call donate()", async () => {
     await donator1.sendTransaction({
     to: createdFoundation.address,
     value: amount, 
-    gasLimit: 50000
+   
 });
 
   // Получаем текущий баланс контракта
   const contractBalance = await ethers.provider.getBalance(newContractAddress);
 
   // Проверяем, что баланс контракта увеличился на сумму взноса
-  expect(contractBalance).to.equal(amount);
+  expect(contractBalance).to.equal(amount2);
 
   // Проверяем, что функция donate() была вызвана
   const donators = await createdFoundation.getDonators();
@@ -186,7 +186,6 @@ it("should emit Received event", async () => {
   const tx = await donator1.sendTransaction({
     to: createdFoundation.address,
     value: amount, 
-    gasLimit: 50000
 });
 
 
