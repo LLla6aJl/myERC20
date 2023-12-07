@@ -3,3 +3,7 @@
 /* eslint-disable */
 import type * as donateSol from "./donate.sol";
 export type { donateSol };
+import type * as interfaces from "./interfaces";
+export type { interfaces };
+import type * as mytokenSol from "./mytoken.sol";
+export type { mytokenSol };

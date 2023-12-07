@@ -13,42 +13,24 @@ import * as Contracts from ".";
 declare module "hardhat/types/runtime" {
   interface HardhatEthersHelpers extends HardhatEthersHelpersBase {
     getContractFactory(
-      name: "Ownable",
+      name: "IERC20",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Ownable__factory>;
+    ): Promise<Contracts.IERC20__factory>;
     getContractFactory(
-      name: "Foundation",
+      name: "ERC20Token",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.Foundation__factory>;
-    getContractFactory(
-      name: "FundManager",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.FundManager__factory>;
-    getContractFactory(
-      name: "IFoundation",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IFoundation__factory>;
+    ): Promise<Contracts.ERC20Token__factory>;
 
     getContractAt(
-      name: "Ownable",
+      name: "IERC20",
       address: string,
       signer?: ethers.Signer
-    ): Promise<Contracts.Ownable>;
+    ): Promise<Contracts.IERC20>;
     getContractAt(
-      name: "Foundation",
+      name: "ERC20Token",
       address: string,
       signer?: ethers.Signer
-    ): Promise<Contracts.Foundation>;
-    getContractAt(
-      name: "FundManager",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.FundManager>;
-    getContractAt(
-      name: "IFoundation",
-      address: string,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IFoundation>;
+    ): Promise<Contracts.ERC20Token>;
 
     // default types
     getContractFactory(

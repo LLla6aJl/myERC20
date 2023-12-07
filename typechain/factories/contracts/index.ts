@@ -2,3 +2,5 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as donateSol from "./donate.sol";
+export * as interfaces from "./interfaces";
+export * as mytokenSol from "./mytoken.sol";

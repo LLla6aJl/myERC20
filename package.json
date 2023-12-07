@@ -40,7 +40,6 @@
     },
     "dependencies": {
         "@babel/eslint-parser": "^7.22.10",
-        "@openzeppelin/contracts": "^4.9.3",
         "dotenv": "^10.0.0",
         "fs": "^0.0.1-security"
     },

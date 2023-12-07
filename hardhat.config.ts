@@ -6,7 +6,7 @@ import "@nomicfoundation/hardhat-chai-matchers"
 import "@nomiclabs/hardhat-ethers"
 import "hardhat-deploy"
 import "hardhat-contract-sizer"
-import "./tasks"
+//import "./tasks"
 
 dotenv.config()
 

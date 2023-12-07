@@ -4,17 +4,15 @@ import { verify } from "./helpers/verify"
 async function main() {
     const { deploy } = deployments
     const { deployer } = await getNamedAccounts()
-    const WAIT_BLOCK_CONFIRMATIONS = 12
-    const args = [11]
+    const WAIT_BLOCK_CONFIRMATIONS = 6
 
-    const fundManager = await deploy("FundManager", {
+    const fundManager = await deploy("ERC20Token", {
         from: deployer,
         log: true,
-        args: args,
         waitConfirmations: WAIT_BLOCK_CONFIRMATIONS,
     })
     console.log("FundManager deployed to:", fundManager.address)
-    await verify(fundManager.address, args)
+    await verify(fundManager.address, [])
 }
 
 main()
