@@ -2,7 +2,6 @@ import { expect } from "chai"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { ethers } from "hardhat"
 import { Contract } from "ethers"
-import { IERC20, IERC20__factory } from "../../typechain"
 
 const DECIMALS = 18
 const NAME = "MyToken"
@@ -11,6 +10,7 @@ const INITIAL_AMOUNT = ethers.utils.parseEther("10")
 const ONE_TOKEN = ethers.utils.parseEther("1")
 const TWO_TOKEN = ethers.utils.parseEther("2")
 const THREE_TOKEN = ethers.utils.parseEther("3")
+export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 describe("MyToken Contract ERC20", function () {
     let MyToken
@@ -56,17 +56,22 @@ describe("MyToken Contract ERC20", function () {
         it("should transfer tokens from sender to recipient", async function () {
             const initialOwnerBalance = await myToken.balanceOf(owner.address)
             const initialRecipientBalance = await myToken.balanceOf(user2.address)
-            const amountToTransfer = 100
 
-            await expect(myToken.connect(owner).transfer(user2.address, amountToTransfer))
+            await expect(myToken.connect(owner).transfer(user2.address, ONE_TOKEN))
                 .to.emit(myToken, "Transfer")
-                .withArgs(owner.address, user2.address, amountToTransfer)
+                .withArgs(owner.address, user2.address, ONE_TOKEN)
 
             const finalOwnerBalance = await myToken.balanceOf(owner.address)
             const finalRecipientBalance = await myToken.balanceOf(user2.address)
 
-            expect(finalOwnerBalance).to.equal(initialOwnerBalance.sub(amountToTransfer))
-            expect(finalRecipientBalance).to.equal(initialRecipientBalance.add(amountToTransfer))
+            expect(finalOwnerBalance).to.equal(initialOwnerBalance.sub(ONE_TOKEN))
+            expect(finalRecipientBalance).to.equal(initialRecipientBalance.add(ONE_TOKEN))
+        })
+
+        it("should revert if recepient zero address", async function () {
+            await expect(
+                myToken.connect(owner).transfer(ZERO_ADDRESS, ONE_TOKEN)
+            ).to.be.revertedWithCustomError(myToken, "ZeroAddress")
         })
 
         it("should revert if sender does not have enough balance", async function () {
@@ -74,7 +79,7 @@ describe("MyToken Contract ERC20", function () {
 
             await expect(
                 myToken.connect(owner).transfer(user2.address, initialOwnerBalance.add(1))
-            ).to.be.revertedWith("ERC20: transfer amount exceeds balance")
+            ).to.be.revertedWithCustomError(myToken, "InsufficientBalance")
 
             // Check that balances remain unchanged
             const finalOwnerBalance = await myToken.balanceOf(owner.address)
@@ -124,6 +129,12 @@ describe("MyToken Contract ERC20", function () {
     })
 
     describe("Transfer From", function () {
+        it("should revert if To = zero address", async function () {
+            await expect(
+                myToken.connect(owner).transferFrom(user1.address, ZERO_ADDRESS, ONE_TOKEN)
+            ).to.be.revertedWithCustomError(myToken, "ZeroAddress")
+        })
+
         it("should allow transfer from approved allowance", async function () {
             await expect(await myToken.transfer(user1.address, TWO_TOKEN)).to.emit(
                 myToken,
@@ -134,7 +145,6 @@ describe("MyToken Contract ERC20", function () {
                 myToken,
                 "Approval"
             )
-
             const initialOwnerBalance = await myToken.balanceOf(user1.address)
             const initialRecipientBalance = await myToken.balanceOf(user2.address)
 
@@ -157,7 +167,7 @@ describe("MyToken Contract ERC20", function () {
 
             await expect(
                 myToken.connect(user2).transferFrom(user1.address, user2.address, TWO_TOKEN)
-            ).to.be.revertedWith("Insufficient balance from")
+            ).to.be.revertedWithCustomError(myToken, "InsufficientBalance")
         })
 
         it("should revert if insufficient allowance", async function () {
@@ -166,32 +176,33 @@ describe("MyToken Contract ERC20", function () {
                 "Transfer"
             )
 
-            await myToken.connect(user1).approve(user2.address, TWO_TOKEN)
+            //  await myToken.connect(user1).approve(user2.address, TWO_TOKEN)
 
             await expect(
-                myToken.connect(user2).transferFrom(user1.address, user2.address, THREE_TOKEN)
-            ).to.be.revertedWith("Insufficient allowance")
+                myToken.connect(user2).transferFrom(user1.address, user2.address, ONE_TOKEN)
+            ).to.be.revertedWithCustomError(myToken, "InsufficientAllowance")
         })
     })
 
     describe("decrease increase allowance", function () {
         it("should increase allowance for a spender", async function () {
             const initialAllowance = await myToken.allowance(user1.address, user2.address)
-            const addedValue = 100
-            await myToken.connect(user1).increaseAllowance(user2.address, addedValue)
+            await myToken.connect(user1).increaseAllowance(user2.address, ONE_TOKEN)
             const finalAllowance = await myToken.allowance(user1.address, user2.address)
-            expect(finalAllowance).to.equal(initialAllowance.add(addedValue))
+            expect(finalAllowance).to.equal(initialAllowance.add(ONE_TOKEN))
+        })
+
+        it("should revert if allowance below zero", async function () {
+            await expect(
+                myToken.connect(user1).decreaseAllowance(user2.address, ONE_TOKEN)
+            ).to.be.revertedWithCustomError(myToken, "AllowanceBelowZero")
         })
 
         it("should decrease allowance for a spender", async function () {
             const addedValue = 100
             await myToken.connect(user1).increaseAllowance(user2.address, addedValue)
             const initialAllowance = await myToken.allowance(user1.address, user2.address)
-            if (addedValue > initialAllowance) {
-                await expect(
-                    await myToken.connect(user1).decreaseAllowance(user2.address, addedValue)
-                ).to.be.revertedWith("Insufficient allowance")
-            }
+
             await expect(await myToken.connect(user1).decreaseAllowance(user2.address, addedValue))
                 .to.emit(myToken, "Approval")
                 .withArgs(user1.address, user2.address, initialAllowance - addedValue)
@@ -223,7 +234,13 @@ describe("MyToken Contract ERC20", function () {
 
             await expect(
                 myToken.connect(user1).mint(user1.address, amountToMint)
-            ).to.be.revertedWith("ERC20: mint can only be called by the owner")
+            ).to.be.revertedWithCustomError(myToken, "OnlyOwner")
+        })
+
+        it("should revert if account zero address", async function () {
+            await expect(
+                myToken.connect(owner).mint(ZERO_ADDRESS, ONE_TOKEN)
+            ).to.be.revertedWithCustomError(myToken, "ZeroAddress")
         })
     })
 
@@ -249,7 +266,7 @@ describe("MyToken Contract ERC20", function () {
 
             await expect(
                 myToken.connect(user2).burn(user2.address, amountToBurn)
-            ).to.be.revertedWith("ERC20: burn can only be called by the owner")
+            ).to.be.revertedWithCustomError(myToken, "OnlyOwner")
         })
 
         it("should revert if the amount to burn exceeds the balance", async function () {
@@ -258,7 +275,7 @@ describe("MyToken Contract ERC20", function () {
 
             await expect(
                 myToken.connect(owner).burn(owner.address, initialBalance.add(1))
-            ).to.be.revertedWith("ERC20: burn amount exceeds balance")
+            ).to.be.revertedWithCustomError(myToken, "InsufficientBalance")
         })
     })
 })

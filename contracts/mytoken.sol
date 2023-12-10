@@ -11,6 +11,13 @@ contract ERC20Token is IERC20 {
     uint8 public decimals;
     address public owner;
 
+    error ZeroAddress(address recipient);
+    error InsufficientBalance(uint256 amount);
+    error InsufficientAllowance(uint256 amount);
+    error OnlyOwner(address msgSender);
+    error UpdateDescriptionOnlyOwner(address owner);
+    error AllowanceBelowZero(uint256 amount);
+
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
     uint256 private _totalSupply;
@@ -78,8 +85,14 @@ contract ERC20Token is IERC20 {
     /// @param sender The address from which tokens will be transferred.
     /// @param recipient The address to which tokens will be transferred.
     /// @param amount The amount of tokens to transfer.
+
     function _transfer(address sender, address recipient, uint256 amount) internal {
-        require(_balances[sender] >= amount, "ERC20: transfer amount exceeds balance");
+        if (recipient == address(0)) {
+            revert ZeroAddress(recipient);
+        }
+        if (_balances[sender] < amount) {
+            revert InsufficientBalance(amount);
+        }
         _balances[sender] -= amount;
         _balances[recipient] += amount;
 
@@ -110,17 +123,27 @@ contract ERC20Token is IERC20 {
     /// @return A boolean indicating the success of the operation.
     function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
         uint256 currentAllowance = _allowances[msg.sender][spender];
-        require(currentAllowance >= subtractedValue, "ERC20: decreased allowance below zero");
-
+        if (subtractedValue > currentAllowance) {
+            revert AllowanceBelowZero(subtractedValue);
+        }
         _approve(msg.sender, spender, currentAllowance - subtractedValue);
         return true;
+    }
+
+    modifier Ownable() {
+        if (msg.sender != owner) {
+            revert OnlyOwner(msg.sender);
+        }
+        _;
     }
 
     /// @dev Mints new tokens and increases the total supply.
     /// @param account The address to which new tokens will be minted.
     /// @param amount The amount of new tokens to mint.
-    function mint(address account, uint256 amount) public {
-        require(msg.sender == owner, "ERC20: mint can only be called by the owner");
+    function mint(address account, uint256 amount) public Ownable {
+        if (account == address(0)) {
+            revert ZeroAddress(account);
+        }
         _totalSupply += amount;
         _balances[account] += amount;
         emit Transfer(address(0), account, amount);
@@ -129,18 +152,27 @@ contract ERC20Token is IERC20 {
     /// @dev Burns tokens and decreases the total supply.
     /// @param account The address from which tokens will be burned.
     /// @param amount The amount of tokens to burn.
-    function burn(address account, uint256 amount) public {
-        require(msg.sender == owner, "ERC20: burn can only be called by the owner");
+    function burn(address account, uint256 amount) public Ownable {
         uint256 accountBalance = _balances[account];
-        require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
+        if (accountBalance < amount) {
+            revert InsufficientBalance(amount);
+        }
         _totalSupply -= amount;
         _balances[account] -= amount;
         emit Transfer(account, address(0), amount);
     }
 
     function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
-        require(_balances[from] >= amount, "Insufficient balance from");
-        require(_allowances[from][msg.sender] >= amount, "Insufficient allowance");
+        if (to == address(0)) {
+            revert ZeroAddress(to);
+        }
+
+        if (_balances[from] < amount) {
+            revert InsufficientBalance(amount);
+        }
+        if (_allowances[from][msg.sender] < amount) {
+            revert InsufficientAllowance(_allowances[from][msg.sender]);
+        }
 
         _balances[from] -= amount;
         _balances[to] += amount;
